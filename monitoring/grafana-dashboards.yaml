@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana-dashboards
-  namespace: deploy-proj-cd74527c09c4
+  namespace: deploy-proj-ee673efea5db
   labels:
     app: grafana
 data:
@@ -48,7 +48,7 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"deploy-proj-cd74527c09c4\",pod=~\"tailwind-dashboard-template-.*\"}[5m]))",
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"deploy-proj-ee673efea5db\",pod=~\"tailwind-dashboard-template-.*\"}[5m]))",
               "legendFormat": "CPU Usage (cores)"
             }
           ]
@@ -70,7 +70,7 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "sum(container_memory_working_set_bytes{namespace=\"deploy-proj-cd74527c09c4\",pod=~\"tailwind-dashboard-template-.*\"}) / 1024 / 1024",
+              "expr": "sum(container_memory_working_set_bytes{namespace=\"deploy-proj-ee673efea5db\",pod=~\"tailwind-dashboard-template-.*\"}) / 1024 / 1024",
               "legendFormat": "Memory Usage MB"
             }
           ]
