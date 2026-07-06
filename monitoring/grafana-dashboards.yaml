@@ -1,0 +1,167 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: deploy-proj-cd74527c09c4
+  labels:
+    app: grafana
+data:
+  tailwind-dashboard-template-dashboard.json: |
+    {
+      "id": null,
+      "uid": "tailwind-dashboard-template-monitoring",
+      "version": 1,
+      "annotations": {
+        "list": []
+      },
+      "editable": true,
+      "schemaVersion": 39,
+      "title": "tailwind-dashboard-template \u2014 nodejs monitoring",
+      "tags": [
+        "devops-autopilot",
+        "nodejs"
+      ],
+      "timezone": "browser",
+      "time": {
+        "from": "now-15m",
+        "to": "now"
+      },
+      "refresh": "10s",
+      "templating": {
+        "list": []
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "CPU Usage (cores)",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 0
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"deploy-proj-cd74527c09c4\",pod=~\"tailwind-dashboard-template-.*\"}[5m]))",
+              "legendFormat": "CPU Usage (cores)"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "title": "Memory Usage MB",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 0
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(container_memory_working_set_bytes{namespace=\"deploy-proj-cd74527c09c4\",pod=~\"tailwind-dashboard-template-.*\"}) / 1024 / 1024",
+              "legendFormat": "Memory Usage MB"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "title": "Network In KB/s",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(container_network_receive_bytes_total{id=\"/\",interface=\"eth0\"}[5m])) / 1024",
+              "legendFormat": "Network In KB/s"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "title": "Network Out KB/s",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(container_network_transmit_bytes_total{id=\"/\",interface=\"eth0\"}[5m])) / 1024",
+              "legendFormat": "Network Out KB/s"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "title": "Filesystem Usage MB",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 16
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "max(container_fs_usage_bytes) / 1024 / 1024",
+              "legendFormat": "Filesystem Usage MB"
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "title": "App Target Up",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 16
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "up{job=\"tailwind-dashboard-template\"}",
+              "legendFormat": "App Target Up"
+            }
+          ]
+        }
+      ]
+    }
