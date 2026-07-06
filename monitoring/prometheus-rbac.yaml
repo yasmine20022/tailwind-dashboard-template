@@ -2,14 +2,14 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: prometheus
-  namespace: deploy-proj-cd74527c09c4
+  namespace: deploy-proj-ee673efea5db
   labels:
     app: prometheus
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: prometheus-deploy-proj-cd74527c09c4
+  name: prometheus-deploy-proj-ee673efea5db
 rules:
   - apiGroups: [""]
     resources: ["nodes", "nodes/proxy", "nodes/metrics", "services", "endpoints", "pods"]
@@ -20,12 +20,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: prometheus-deploy-proj-cd74527c09c4
+  name: prometheus-deploy-proj-ee673efea5db
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: prometheus-deploy-proj-cd74527c09c4
+  name: prometheus-deploy-proj-ee673efea5db
 subjects:
   - kind: ServiceAccount
     name: prometheus
-    namespace: deploy-proj-cd74527c09c4
+    namespace: deploy-proj-ee673efea5db
