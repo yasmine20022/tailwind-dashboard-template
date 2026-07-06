@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tailwind-dashboard-template
+  labels:
+    app: tailwind-dashboard-template
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tailwind-dashboard-template
+  template:
+    metadata:
+      labels:
+        app: tailwind-dashboard-template
+    spec:
+      containers:
+      - name: tailwind-dashboard-template
+        image: tailwind-dashboard-template:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 256Mi
+            cpu: 500m
+        readinessProbe:
+          httpGet: &id001
+            path: /health
+            port: 8000
+          periodSeconds: 10
+          failureThreshold: 3
+          initialDelaySeconds: 15
+        livenessProbe:
+          httpGet: *id001
+          periodSeconds: 10
+          failureThreshold: 3
+          initialDelaySeconds: 30
