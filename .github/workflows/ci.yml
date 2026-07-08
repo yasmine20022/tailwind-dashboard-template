@@ -46,16 +46,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Log in to ACR
-        run: echo "${{ secrets.ACR_PASSWORD }}" | docker login ybdevopsacr2026sc.azurecr.io -u "${{ secrets.ACR_USERNAME }}" --password-stdin
+        env:
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+        run: |
+          if [ -z "$ACR_USERNAME" ] || [ -z "$ACR_PASSWORD" ]; then
+            echo "::error::Missing repository secrets ACR_USERNAME and/or ACR_PASSWORD. Add them under Settings -> Secrets and variables -> Actions -> New repository secret. ACR_USERNAME is the registry name (ybdevopsacr2026sc); get ACR_PASSWORD from: az acr credential show -n ybdevopsacr2026sc --query passwords[0].value -o tsv"
+            exit 1
+          fi
+          echo "$ACR_PASSWORD" | docker login ybdevopsacr2026sc.azurecr.io -u "$ACR_USERNAME" --password-stdin
       - name: Build and push image to ACR
         run: |
           docker build -t ybdevopsacr2026sc.azurecr.io/tailwind-dashboard-template:${{ github.sha }} -t ybdevopsacr2026sc.azurecr.io/tailwind-dashboard-template:latest .
           docker push ybdevopsacr2026sc.azurecr.io/tailwind-dashboard-template:${{ github.sha }}
           docker push ybdevopsacr2026sc.azurecr.io/tailwind-dashboard-template:latest
       - name: Configure kubeconfig for AKS
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
         run: |
+          if [ -z "$KUBE_CONFIG" ]; then
+            echo "::error::Missing repository secret KUBE_CONFIG (base64 of the AKS kubeconfig). Generate it with: az aks get-credentials -g <resource-group> -n <cluster> -f ./kubeconfig && base64 -w0 ./kubeconfig  (paste the output as the secret value)."
+            exit 1
+          fi
           mkdir -p "$HOME/.kube"
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > "$HOME/.kube/config"
+          echo "$KUBE_CONFIG" | base64 -d > "$HOME/.kube/config"
       - name: Deploy to AKS
         run: |
           cat > deployment.yaml <<'EOF'
