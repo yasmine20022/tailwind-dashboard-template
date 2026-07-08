@@ -1,5 +1,4 @@
 name: CI/CD to Minikube
-
 on:
   push:
     branches: [main, master]
@@ -12,12 +11,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-
+          node-version: "20"
       - name: Install dependencies
         run: |
           if [ -f package-lock.json ]; then
@@ -77,15 +74,15 @@ jobs:
                     image: tailwind-dashboard-template:latest
                     imagePullPolicy: Never
                     ports:
-                      - containerPort: 3000
+                      - containerPort: 8000
                     readinessProbe:
                       tcpSocket:
-                        port: 3000
+                        port: 8000
                       initialDelaySeconds: 5
                       periodSeconds: 5
                     livenessProbe:
                       tcpSocket:
-                        port: 3000
+                        port: 8000
                       initialDelaySeconds: 15
                       periodSeconds: 10
           EOF
@@ -102,7 +99,7 @@ jobs:
             --name=tailwind-dashboard-template \
             --type=ClusterIP \
             --port=80 \
-            --target-port=3000 \
+            --target-port=8000 \
             --dry-run=client -o yaml | kubectl apply -f -
       - name: Wait for rollout
         run: kubectl rollout status deployment/tailwind-dashboard-template --timeout=120s
