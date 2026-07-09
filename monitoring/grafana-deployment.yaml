@@ -93,7 +93,7 @@ metadata:
   labels:
     app: grafana
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: grafana
   ports:
