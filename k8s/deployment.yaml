@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
       - name: tailwind-dashboard-template
-        image: ybdevopsacr2026sc.azurecr.io/tailwind-dashboard-template:latest
-        imagePullPolicy: Always
+        image: tailwind-dashboard-template:latest
+        imagePullPolicy: Never
         ports:
         - containerPort: 8000
         resources:
