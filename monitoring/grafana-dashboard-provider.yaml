@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana-dashboard-provider
-  namespace: deploy-proj-84452aaa5856
+  namespace: deploy-proj-394e69fc6ace
   labels:
     app: grafana
 data:
