@@ -1,5 +1,4 @@
-name: CI/CD to Minikube
-
+name: CI/CD to AKS
 on:
   push:
     branches: [main, master]
@@ -12,33 +11,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci || npm install
-          elif [ -f yarn.lock ]; then
-            command -v yarn >/dev/null 2>&1 || npm install -g yarn
-            yarn install --frozen-lockfile || yarn install
-          elif [ -f pnpm-lock.yaml ]; then
-            # Pin pnpm@9 (supports Node 18+): pnpm@latest needs Node >= 22.13
-            # (node:sqlite) and crashes on Node 20 with ERR_UNKNOWN_BUILTIN_MODULE.
-            # `corepack enable` CREATES the pnpm shim on PATH (on GitHub-hosted
-            # runners `corepack prepare --activate` alone does NOT → "pnpm: command
-            # not found"); `prepare --activate` then pins the version. Fallback to a
-            # forced global install if corepack is unavailable.
-            corepack enable 2>/dev/null || true
-            corepack prepare pnpm@9.15.9 --activate 2>/dev/null || npm install -g pnpm@9 --force 2>/dev/null || true
-            pnpm config set dangerously-allow-all-builds true 2>/dev/null || true
-            pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
-          elif [ -f package.json ]; then
-            npm install
-          fi
       - name: Build Docker image
         run: docker build -t tailwind-dashboard-template:latest .
 
@@ -48,16 +20,34 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Start Minikube
-        uses: medyagh/setup-minikube@latest
-      - name: Build image inside Minikube
+      - name: Log in to ACR
+        env:
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
         run: |
-          eval $(minikube docker-env)
-          docker build -t tailwind-dashboard-template:latest .
-      - name: Create Kubernetes manifest
+          if [ -z "$ACR_USERNAME" ] || [ -z "$ACR_PASSWORD" ]; then
+            echo "::error::Missing repository secrets ACR_USERNAME and/or ACR_PASSWORD. Add them under Settings -> Secrets and variables -> Actions -> New repository secret. ACR_USERNAME is the registry name (ybdevopsacr2026sc); get ACR_PASSWORD from: az acr credential show -n ybdevopsacr2026sc --query passwords[0].value -o tsv"
+            exit 1
+          fi
+          echo "$ACR_PASSWORD" | docker login ybdevopsacr2026sc.azurecr.io -u "$ACR_USERNAME" --password-stdin
+      - name: Build and push image to ACR
         run: |
-          mkdir -p /tmp/devops-autopilot-k8s
-          cat > /tmp/devops-autopilot-k8s/deployment.yaml <<'EOF'
+          docker build -t ybdevopsacr2026sc.azurecr.io/tailwind-dashboard-template:${{ github.sha }} -t ybdevopsacr2026sc.azurecr.io/tailwind-dashboard-template:latest .
+          docker push ybdevopsacr2026sc.azurecr.io/tailwind-dashboard-template:${{ github.sha }}
+          docker push ybdevopsacr2026sc.azurecr.io/tailwind-dashboard-template:latest
+      - name: Configure kubeconfig for AKS
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+        run: |
+          if [ -z "$KUBE_CONFIG" ]; then
+            echo "::error::Missing repository secret KUBE_CONFIG (base64 of the AKS kubeconfig). Generate it with: az aks get-credentials -g <resource-group> -n <cluster> -f ./kubeconfig && base64 -w0 ./kubeconfig  (paste the output as the secret value)."
+            exit 1
+          fi
+          mkdir -p "$HOME/.kube"
+          echo "$KUBE_CONFIG" | base64 -d > "$HOME/.kube/config"
+      - name: Deploy to AKS
+        run: |
+          cat > deployment.yaml <<'EOF'
           apiVersion: apps/v1
           kind: Deployment
           metadata:
@@ -74,57 +64,27 @@ jobs:
               spec:
                 containers:
                   - name: tailwind-dashboard-template
-                    image: tailwind-dashboard-template:latest
-                    imagePullPolicy: Never
+                    image: ybdevopsacr2026sc.azurecr.io/tailwind-dashboard-template:latest
+                    imagePullPolicy: Always
                     ports:
                       - containerPort: 8000
-                    readinessProbe:
-                      tcpSocket:
-                        port: 8000
-                      initialDelaySeconds: 5
-                      periodSeconds: 5
-                    livenessProbe:
-                      tcpSocket:
-                        port: 8000
-                      initialDelaySeconds: 15
-                      periodSeconds: 10
+          ---
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: tailwind-dashboard-template
+          spec:
+            type: LoadBalancer
+            selector:
+              app: tailwind-dashboard-template
+            ports:
+              - port: 80
+                targetPort: 8000
           EOF
-      - name: Deploy to Minikube
-        run: |
-          if [ -d k8s ]; then
-            kubectl apply -f k8s/
-          else
-            kubectl apply -f /tmp/devops-autopilot-k8s/deployment.yaml
-          fi
-      - name: Expose app inside cluster
-        run: |
-          kubectl expose deployment tailwind-dashboard-template \
-            --name=tailwind-dashboard-template \
-            --type=ClusterIP \
-            --port=80 \
-            --target-port=8000 \
-            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -f deployment.yaml
       - name: Wait for rollout
-        run: kubectl rollout status deployment/tailwind-dashboard-template --timeout=120s
-      - name: Smoke test deployed app
+        run: kubectl rollout status deployment/tailwind-dashboard-template --timeout=180s
+      - name: Show public URL
         run: |
-          kubectl port-forward service/tailwind-dashboard-template 18080:80 > /tmp/tailwind-dashboard-template-port-forward.log 2>&1 &
-          PF_PID=$!
-          trap 'kill $PF_PID 2>/dev/null || true' EXIT
-
-          for path in /health /health/ /; do
-            for attempt in $(seq 1 20); do
-              if curl -fsS "http://127.0.0.1:18080$path" >/tmp/tailwind-dashboard-template-response.txt; then
-                echo "Smoke test passed on $path"
-                exit 0
-              fi
-              sleep 2
-            done
-          done
-
-          echo "Smoke test failed: app did not return a successful HTTP response."
-          cat /tmp/tailwind-dashboard-template-port-forward.log || true
-          kubectl get pods -o wide
-          kubectl describe deployment tailwind-dashboard-template
-          kubectl logs deployment/tailwind-dashboard-template --tail=100 || true
-          exit 1
+          IP=$(kubectl get svc tailwind-dashboard-template -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          echo "App public URL: http://$IP"
