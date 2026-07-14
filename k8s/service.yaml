@@ -5,7 +5,7 @@ metadata:
   labels:
     app: tailwind-dashboard-template
 spec:
-  type: NodePort
+  type: LoadBalancer
   selector:
     app: tailwind-dashboard-template
   ports:
