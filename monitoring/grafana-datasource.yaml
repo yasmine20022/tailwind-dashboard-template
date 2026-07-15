@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana-datasource
-  namespace: deploy-proj-5bf395f0a4fa
+  namespace: deploy-proj-308987173897
   labels:
     app: grafana
 data:
@@ -13,5 +13,5 @@ data:
         uid: prometheus
         type: prometheus
         access: proxy
-        url: http://prometheus.deploy-proj-5bf395f0a4fa:9090
+        url: http://prometheus.deploy-proj-308987173897:9090
         isDefault: true
