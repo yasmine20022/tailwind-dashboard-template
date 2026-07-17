@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-config
-  namespace: deploy-proj-ede0c41dbda1
+  namespace: deploy-proj-a19a74b22cc1
   labels:
     app: prometheus
 data:
@@ -31,7 +31,7 @@ data:
         metrics_path: /metrics
         scrape_interval: 15s
         static_configs:
-          - targets: ["tailwind-dashboard-template.deploy-proj-ede0c41dbda1:80"]
+          - targets: ["tailwind-dashboard-template.deploy-proj-a19a74b22cc1:80"]
       - job_name: prometheus
         static_configs:
           - targets: ["localhost:9090"]
