@@ -5,7 +5,7 @@ metadata:
   labels:
     app: tailwind-dashboard-template
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: tailwind-dashboard-template
