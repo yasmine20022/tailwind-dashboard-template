@@ -45,6 +45,18 @@ jobs:
           fi
           mkdir -p "$HOME/.kube"
           echo "$KUBE_CONFIG" | base64 -d > "$HOME/.kube/config"
+      - name: Create ACR pull secret
+        env:
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+        run: |
+          # L'ACR est prive : sans ce secret le kubelet recoit 'unauthorized'
+          # et le pod reste en ImagePullBackOff, donc 'rollout status' expire.
+          kubectl create secret docker-registry acr-pull-secret
+            --docker-server=ybdevopsacr2609052222.azurecr.io
+            --docker-username="$ACR_USERNAME"
+            --docker-password="$ACR_PASSWORD"
+            --dry-run=client -o yaml | kubectl apply -f -
       - name: Deploy to AKS
         run: |
           cat > deployment.yaml <<'EOF'
@@ -62,6 +74,8 @@ jobs:
                 labels:
                   app: tailwind-dashboard-template
               spec:
+                imagePullSecrets:
+                  - name: acr-pull-secret
                 containers:
                   - name: tailwind-dashboard-template
                     image: ybdevopsacr2609052222.azurecr.io/tailwind-dashboard-template:latest
