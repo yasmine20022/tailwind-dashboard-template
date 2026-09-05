@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/name: tailwind-dashboard-template
     app.kubernetes.io/component: web
     app.kubernetes.io/part-of: tailwind-dashboard
-    app.kubernetes.io/managed-by: helm
+    app.kubernetes.io/managed-by: kubectl
 spec:
   type: LoadBalancer
   selector:
