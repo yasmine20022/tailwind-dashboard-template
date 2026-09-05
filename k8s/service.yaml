@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tailwind-dashboard-template
+  labels:
+    app.kubernetes.io/name: tailwind-dashboard-template
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: tailwind-dashboard-template
+    app.kubernetes.io/managed-by: helm
+spec:
+  type: LoadBalancer
+  selector:
+    app: tailwind-dashboard-template
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP

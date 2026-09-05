@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tailwind-dashboard-template
+  labels:
+    app.kubernetes.io/name: tailwind-dashboard-template
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: tailwind-dashboard-template
+    app.kubernetes.io/managed-by: helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tailwind-dashboard-template
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+  template:
+    metadata:
+      labels:
+        app: tailwind-dashboard-template
+        app.kubernetes.io/name: tailwind-dashboard-template
+        app.kubernetes.io/component: web
+        app.kubernetes.io/part-of: tailwind-dashboard-template
+        app.kubernetes.io/managed-by: helm
+    spec:
+      containers:
+      - name: tailwind-dashboard-template
+        image: ybdevopsacr2609052222.azurecr.io/tailwind-dashboard-template:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          periodSeconds: 10
+          failureThreshold: 30
+      imagePullSecrets:
+      - name: acr-pull-secret
