@@ -3,7 +3,10 @@ kind: Service
 metadata:
   name: tailwind-dashboard-template
   labels:
-    app: tailwind-dashboard-template
+    app.kubernetes.io/name: tailwind-dashboard-template
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: tailwind-dashboard
+    app.kubernetes.io/managed-by: helm
 spec:
   type: LoadBalancer
   selector:
@@ -11,3 +14,4 @@ spec:
   ports:
   - port: 80
     targetPort: 8000
+    protocol: TCP
