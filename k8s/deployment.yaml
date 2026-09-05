@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/name: tailwind-dashboard-template
     app.kubernetes.io/component: web
     app.kubernetes.io/part-of: tailwind-dashboard
-    app.kubernetes.io/managed-by: helm
+    app.kubernetes.io/managed-by: kubectl
 spec:
   replicas: 1
   selector:
@@ -24,11 +24,11 @@ spec:
         app.kubernetes.io/name: tailwind-dashboard-template
         app.kubernetes.io/component: web
         app.kubernetes.io/part-of: tailwind-dashboard
-        app.kubernetes.io/managed-by: helm
+        app.kubernetes.io/managed-by: kubectl
     spec:
       containers:
       - name: tailwind-dashboard-template
-        image: ybdevopsacr2026sc.azurecr.io/tailwind-dashboard-template:latest
+        image: ybdevopsacr2609052222.azurecr.io/tailwind-dashboard-template:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
@@ -61,3 +61,19 @@ spec:
             port: 8000
           periodSeconds: 10
           failureThreshold: 30
+        volumeMounts:
+        - name: nginx-cache
+          mountPath: /var/cache/nginx
+        - name: nginx-run
+          mountPath: /var/run
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: nginx-cache
+        emptyDir: {}
+      - name: nginx-run
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}
+      imagePullSecrets:
+      - name: acr-pull-secret
