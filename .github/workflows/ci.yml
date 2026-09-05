@@ -1,0 +1,104 @@
+name: CI/CD to AKS
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t tailwind-dashboard-template:latest .
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Log in to ACR
+        env:
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+        run: |
+          if [ -z "$ACR_USERNAME" ] || [ -z "$ACR_PASSWORD" ]; then
+            echo "::error::Missing repository secrets ACR_USERNAME and/or ACR_PASSWORD. Add them under Settings -> Secrets and variables -> Actions -> New repository secret. ACR_USERNAME is the registry name (ybdevopsacr2609052222); get ACR_PASSWORD from: az acr credential show -n ybdevopsacr2609052222 --query passwords[0].value -o tsv"
+            exit 1
+          fi
+          echo "$ACR_PASSWORD" | docker login ybdevopsacr2609052222.azurecr.io -u "$ACR_USERNAME" --password-stdin
+      - name: Build and push image to ACR
+        run: |
+          docker build -t ybdevopsacr2609052222.azurecr.io/tailwind-dashboard-template:${{ github.sha }} -t ybdevopsacr2609052222.azurecr.io/tailwind-dashboard-template:latest .
+          docker push ybdevopsacr2609052222.azurecr.io/tailwind-dashboard-template:${{ github.sha }}
+          docker push ybdevopsacr2609052222.azurecr.io/tailwind-dashboard-template:latest
+      - name: Configure kubeconfig for AKS
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+        run: |
+          if [ -z "$KUBE_CONFIG" ]; then
+            echo "::error::Missing repository secret KUBE_CONFIG (base64 of the AKS kubeconfig). Generate it with: az aks get-credentials -g <resource-group> -n <cluster> -f ./kubeconfig && base64 -w0 ./kubeconfig  (paste the output as the secret value)."
+            exit 1
+          fi
+          mkdir -p "$HOME/.kube"
+          echo "$KUBE_CONFIG" | base64 -d > "$HOME/.kube/config"
+      - name: Create ACR pull secret
+        env:
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+        run: |
+          # L'ACR est prive : sans ce secret le kubelet recoit 'unauthorized'
+          # et le pod reste en ImagePullBackOff, donc 'rollout status' expire.
+          kubectl create secret docker-registry acr-pull-secret
+            --docker-server=ybdevopsacr2609052222.azurecr.io
+            --docker-username="$ACR_USERNAME"
+            --docker-password="$ACR_PASSWORD"
+            --dry-run=client -o yaml | kubectl apply -f -
+      - name: Deploy to AKS
+        run: |
+          cat > deployment.yaml <<'EOF'
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: tailwind-dashboard-template
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: tailwind-dashboard-template
+            template:
+              metadata:
+                labels:
+                  app: tailwind-dashboard-template
+              spec:
+                imagePullSecrets:
+                  - name: acr-pull-secret
+                containers:
+                  - name: tailwind-dashboard-template
+                    image: ybdevopsacr2609052222.azurecr.io/tailwind-dashboard-template:latest
+                    imagePullPolicy: Always
+                    ports:
+                      - containerPort: 8000
+          ---
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: tailwind-dashboard-template
+          spec:
+            type: LoadBalancer
+            selector:
+              app: tailwind-dashboard-template
+            ports:
+              - port: 80
+                targetPort: 8000
+          EOF
+          kubectl apply -f deployment.yaml
+      - name: Wait for rollout
+        run: kubectl rollout status deployment/tailwind-dashboard-template --timeout=180s
+      - name: Show public URL
+        run: |
+          IP=$(kubectl get svc tailwind-dashboard-template -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          echo "App public URL: http://$IP"
