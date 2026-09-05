@@ -5,8 +5,8 @@ metadata:
   labels:
     app.kubernetes.io/name: tailwind-dashboard-template
     app.kubernetes.io/component: web
-    app.kubernetes.io/part-of: tailwind-dashboard
-    app.kubernetes.io/managed-by: kubectl
+    app.kubernetes.io/part-of: tailwind-dashboard-template
+    app.kubernetes.io/managed-by: helm
 spec:
   replicas: 1
   selector:
@@ -23,8 +23,8 @@ spec:
         app: tailwind-dashboard-template
         app.kubernetes.io/name: tailwind-dashboard-template
         app.kubernetes.io/component: web
-        app.kubernetes.io/part-of: tailwind-dashboard
-        app.kubernetes.io/managed-by: kubectl
+        app.kubernetes.io/part-of: tailwind-dashboard-template
+        app.kubernetes.io/managed-by: helm
     spec:
       containers:
       - name: tailwind-dashboard-template
@@ -61,19 +61,5 @@ spec:
             port: 8000
           periodSeconds: 10
           failureThreshold: 30
-        volumeMounts:
-        - name: nginx-cache
-          mountPath: /var/cache/nginx
-        - name: nginx-run
-          mountPath: /var/run
-        - name: tmp
-          mountPath: /tmp
-      volumes:
-      - name: nginx-cache
-        emptyDir: {}
-      - name: nginx-run
-        emptyDir: {}
-      - name: tmp
-        emptyDir: {}
       imagePullSecrets:
       - name: acr-pull-secret
