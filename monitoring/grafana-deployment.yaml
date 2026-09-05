@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: grafana
-  namespace: deploy-proj-45caeda7963c
+  namespace: deploy-proj-7e0f8a7288eb
   labels:
     app: grafana
 spec:
@@ -55,17 +55,17 @@ spec:
             - name: GF_SECURITY_ALLOW_EMBEDDING
               value: "true"
           resources:
-            # Small CPU request so the whole monitoring stack (prometheus +
-            # grafana) fits alongside the app + kube-system on a 2-vCPU node
-            # (Azure-for-Students B2s_v2 has only ~1900m allocatable, often
-            # ~94% already reserved). Actual usage is tiny (~5m); the 100m
-            # request used to overflow the node → prometheus stuck "Pending:
-            # Insufficient cpu". Limits stay generous for bursts.
+            # CPU volontairement bas : le stack complet doit tenir a cote de
+            # l'app et de kube-system sur un noeud 2 vCPU.
+            # MEMOIRE : 512Mi et non 256Mi. Grafana 11+ (SQLite + provisioning
+            # de dashboards) depasse 256Mi au chargement d'un dashboard et se
+            # fait OOMKiller (exit 137) -> l'UI affiche 'Failed to load
+            # dashboard / Failed to fetch'. Constate le 2026-09-05 sur AKS.
             requests:
-              memory: "128Mi"
+              memory: "256Mi"
               cpu: "50m"
             limits:
-              memory: "256Mi"
+              memory: "512Mi"
               cpu: "500m"
           volumeMounts:
             - name: grafana-datasource
@@ -89,7 +89,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: grafana
-  namespace: deploy-proj-45caeda7963c
+  namespace: deploy-proj-7e0f8a7288eb
   labels:
     app: grafana
 spec:
