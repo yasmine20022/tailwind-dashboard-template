@@ -52,11 +52,7 @@ jobs:
         run: |
           # L'ACR est prive : sans ce secret le kubelet recoit 'unauthorized'
           # et le pod reste en ImagePullBackOff, donc 'rollout status' expire.
-          kubectl create secret docker-registry acr-pull-secret
-            --docker-server=ybdevopsacr2609052222.azurecr.io
-            --docker-username="$ACR_USERNAME"
-            --docker-password="$ACR_PASSWORD"
-            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create secret docker-registry acr-pull-secret --docker-server=ybdevopsacr2609052222.azurecr.io --docker-username="$ACR_USERNAME" --docker-password="$ACR_PASSWORD" --dry-run=client -o yaml | kubectl apply -f -
       - name: Deploy to AKS
         run: |
           cat > deployment.yaml <<'EOF'
